@@ -1,4 +1,7 @@
-const data = window.SKILL_DATA;
+let data = JSON.parse(JSON.stringify(window.SKILL_DATA));
+let dataVersion = 0;
+let authSession = null;
+const backendConfig = window.SKILL_BOARD_CONFIG || {};
 const state = { area: "全部", group: "全部", query: "" };
 
 const els = {
@@ -17,7 +20,84 @@ const els = {
   dialogTitle: document.getElementById("dialogTitle"),
   dialogEyebrow: document.getElementById("dialogEyebrow"),
   dialogBody: document.getElementById("dialogBody"),
+  openEditor: document.getElementById("openEditor"),
+  loginBackdrop: document.getElementById("loginBackdrop"),
+  loginForm: document.getElementById("loginForm"),
+  loginMessage: document.getElementById("loginMessage"),
+  editorPhone: document.getElementById("editorPhone"),
+  editorPassword: document.getElementById("editorPassword"),
+  editorBackdrop: document.getElementById("editorBackdrop"),
+  editGroupSelect: document.getElementById("editGroupSelect"),
+  editEmployeeSelect: document.getElementById("editEmployeeSelect"),
+  employeeEditor: document.getElementById("employeeEditor"),
+  skillEditor: document.getElementById("skillEditor"),
+  editorMessage: document.getElementById("editorMessage"),
+  editName: document.getElementById("editName"),
+  editRole: document.getElementById("editRole"),
+  editPosition: document.getElementById("editPosition"),
+  editBackup: document.getElementById("editBackup"),
 };
+
+function backendConfigured() {
+  return /^https:\/\//.test(backendConfig.backendUrl || "") && Boolean(backendConfig.anonKey);
+}
+
+function apiUrl(path) {
+  return `${String(backendConfig.backendUrl).replace(/\/$/, "")}${path}`;
+}
+
+async function parseApiResponse(response) {
+  const text = await response.text();
+  let body = null;
+  if (text) {
+    try { body = JSON.parse(text); } catch { body = text; }
+  }
+  if (!response.ok) {
+    const message = body?.message || body?.error_description || body?.hint || "服务器暂时无法处理请求";
+    throw new Error(message);
+  }
+  return body;
+}
+
+async function loadRemoteData() {
+  if (!backendConfigured()) return false;
+  const response = await fetch(apiUrl("/rest/v1/dashboard_state?id=eq.1&select=data,version,updated_at"), {
+    headers: { apikey: backendConfig.anonKey },
+    cache: "no-store",
+  });
+  const rows = await parseApiResponse(response);
+  if (!Array.isArray(rows) || !rows[0]?.data) return false;
+  data = rows[0].data;
+  dataVersion = Number(rows[0].version || 0);
+  return true;
+}
+
+async function authenticateEditor(phone, password) {
+  const domain = backendConfig.authEmailDomain || "skillboard.local";
+  const response = await fetch(apiUrl("/auth/v1/token?grant_type=password"), {
+    method: "POST",
+    headers: { apikey: backendConfig.anonKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ email: `${phone}@${domain}`, password }),
+  });
+  return parseApiResponse(response);
+}
+
+async function saveRemoteData() {
+  if (!authSession?.access_token) throw new Error("登录已失效，请重新验证");
+  const response = await fetch(apiUrl("/rest/v1/rpc/save_dashboard"), {
+    method: "POST",
+    headers: {
+      apikey: backendConfig.anonKey,
+      Authorization: `Bearer ${authSession.access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ p_data: data, p_expected_version: dataVersion }),
+  });
+  const result = await parseApiResponse(response);
+  const saved = Array.isArray(result) ? result[0] : result;
+  dataVersion = Number(saved?.version || dataVersion + 1);
+  return saved;
+}
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
@@ -110,8 +190,7 @@ function groupCard(group) {
   const stats = groupStats(group);
   const skills = group.employees[0]?.skills || [];
   const shownSkills = skills.slice(0, 16);
-  const rows = group.employees.map((employee) => {
-    const employeeIndex = data.groups.find((item) => item.id === group.id).employees.findIndex((item) => item.name === employee.name);
+  const rows = group.employees.map((employee, employeeIndex) => {
     const dots = employee.skills.slice(0, 16).map((skill) => dotMarkup(skill)).join("");
     return `<button class="mini-row" type="button" data-action="employee" data-group="${escapeHtml(group.id)}" data-employee="${employeeIndex}">
       <span class="employee-label"><strong>${escapeHtml(employee.name)}</strong><small>${escapeHtml(employee.role)}</small></span>
@@ -169,6 +248,123 @@ function openDialog(title, eyebrow, content) {
 function closeDialog() {
   els.backdrop.hidden = true;
   document.body.style.overflow = "";
+}
+
+function setFormMessage(element, message = "", type = "") {
+  element.textContent = message;
+  element.className = `form-message ${type}`.trim();
+}
+
+function openLogin() {
+  setFormMessage(els.loginMessage);
+  els.editorPassword.value = "";
+  els.loginBackdrop.hidden = false;
+  document.body.style.overflow = "hidden";
+  setTimeout(() => els.editorPhone.focus(), 0);
+}
+
+function closeLogin() {
+  els.loginBackdrop.hidden = true;
+  document.body.style.overflow = "";
+}
+
+function selectedEditGroup() {
+  return data.groups.find((group) => group.id === els.editGroupSelect.value) || data.groups[0];
+}
+
+function selectedEmployeeIndex() {
+  return Math.max(0, Number(els.editEmployeeSelect.value || 0));
+}
+
+function selectedEditEmployee() {
+  const group = selectedEditGroup();
+  return group?.employees[selectedEmployeeIndex()];
+}
+
+function populateEmployeeOptions(index = 0) {
+  const group = selectedEditGroup();
+  els.editEmployeeSelect.innerHTML = (group?.employees || []).map((employee, employeeIndex) =>
+    `<option value="${employeeIndex}">${escapeHtml(employee.name)} · ${escapeHtml(employee.role)}</option>`
+  ).join("");
+  els.editEmployeeSelect.value = String(Math.min(index, Math.max(0, (group?.employees.length || 1) - 1)));
+  renderEmployeeEditor();
+}
+
+function populateEditor() {
+  els.editGroupSelect.innerHTML = data.groups.map((group) =>
+    `<option value="${escapeHtml(group.id)}">${escapeHtml(group.area)} · ${escapeHtml(group.name)}</option>`
+  ).join("");
+  populateEmployeeOptions(0);
+}
+
+function renderEmployeeEditor() {
+  const employee = selectedEditEmployee();
+  if (!employee) {
+    els.employeeEditor.hidden = true;
+    return;
+  }
+  els.employeeEditor.hidden = false;
+  els.editName.value = employee.name || "";
+  els.editRole.value = employee.role || "";
+  els.editPosition.value = employee.position || "";
+  els.editBackup.value = employee.backup || "";
+  els.skillEditor.innerHTML = employee.skills.map((skill, index) => `<div class="skill-edit-row" data-skill-index="${index}">
+    <strong>${escapeHtml(skill.name)}</strong>
+    <label><span>岗位要求</span><input class="required-input" type="number" min="0" max="100" step="1" value="${Number(skill.required || 0)}" /></label>
+    <label><span>实际具备</span><input class="actual-input" type="number" min="0" max="100" step="1" value="${Number(skill.actual || 0)}" /></label>
+  </div>`).join("");
+  setFormMessage(els.editorMessage);
+}
+
+function commitFormToEmployee() {
+  const employee = selectedEditEmployee();
+  if (!employee) throw new Error("请选择员工");
+  const name = els.editName.value.trim();
+  const role = els.editRole.value.trim();
+  if (!name || !role) throw new Error("姓名和岗位不能为空");
+  employee.name = name;
+  employee.role = role;
+  employee.position = els.editPosition.value.trim();
+  employee.backup = els.editBackup.value.trim();
+  els.skillEditor.querySelectorAll(".skill-edit-row").forEach((row) => {
+    const index = Number(row.dataset.skillIndex);
+    const required = Number(row.querySelector(".required-input").value);
+    const actual = Number(row.querySelector(".actual-input").value);
+    if (!Number.isFinite(required) || !Number.isFinite(actual) || required < 0 || required > 100 || actual < 0 || actual > 100) {
+      throw new Error("技能分数必须在 0–100 之间");
+    }
+    employee.skills[index].required = required;
+    employee.skills[index].actual = actual;
+  });
+  const group = selectedEditGroup();
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  group.updateDate = today;
+  data.meta.updated = today;
+}
+
+function refreshDashboard() {
+  els.updatedAt.textContent = data.meta.updated;
+  updateGroupOptions();
+  render();
+}
+
+function openEditorPanel() {
+  closeLogin();
+  populateEditor();
+  els.editorBackdrop.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function closeEditorPanel() {
+  els.editorBackdrop.hidden = true;
+  document.body.style.overflow = "";
+}
+
+function logoutEditor() {
+  authSession = null;
+  closeEditorPanel();
+  els.openEditor.textContent = "在线编辑";
 }
 
 function openGroup(group) {
@@ -267,9 +463,117 @@ document.addEventListener("click", (event) => {
 
 document.getElementById("closeDialog").addEventListener("click", closeDialog);
 els.backdrop.addEventListener("click", (event) => { if (event.target === els.backdrop) closeDialog(); });
-document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !els.backdrop.hidden) closeDialog(); });
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  if (!els.editorBackdrop.hidden) closeEditorPanel();
+  else if (!els.loginBackdrop.hidden) closeLogin();
+  else if (!els.backdrop.hidden) closeDialog();
+});
 
-els.updatedAt.textContent = data.meta.updated;
-renderLegend();
-updateGroupOptions();
-render();
+els.openEditor.addEventListener("click", () => authSession ? openEditorPanel() : openLogin());
+document.getElementById("closeLogin").addEventListener("click", closeLogin);
+document.getElementById("cancelLogin").addEventListener("click", closeLogin);
+els.loginBackdrop.addEventListener("click", (event) => { if (event.target === els.loginBackdrop) closeLogin(); });
+document.getElementById("closeEditor").addEventListener("click", closeEditorPanel);
+els.editorBackdrop.addEventListener("click", (event) => { if (event.target === els.editorBackdrop) closeEditorPanel(); });
+document.getElementById("logoutEditor").addEventListener("click", logoutEditor);
+
+els.loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const phone = els.editorPhone.value.replace(/\s+/g, "");
+  const password = els.editorPassword.value;
+  if (!/^\d{6,20}$/.test(phone)) return setFormMessage(els.loginMessage, "请输入正确的手机号", "error");
+  if (!backendConfigured()) return setFormMessage(els.loginMessage, "在线编辑服务尚未初始化，请联系看板维护人员", "error");
+  const submit = els.loginForm.querySelector('button[type="submit"]');
+  submit.disabled = true;
+  setFormMessage(els.loginMessage, "正在验证…");
+  try {
+    authSession = await authenticateEditor(phone, password);
+    els.openEditor.textContent = "继续编辑";
+    openEditorPanel();
+  } catch (error) {
+    setFormMessage(els.loginMessage, "手机号或密码不正确", "error");
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+els.editGroupSelect.addEventListener("change", () => populateEmployeeOptions(0));
+els.editEmployeeSelect.addEventListener("change", renderEmployeeEditor);
+
+els.employeeEditor.addEventListener("input", (event) => {
+  const employee = selectedEditEmployee();
+  if (!employee) return;
+  if (event.target === els.editName) employee.name = event.target.value;
+  else if (event.target === els.editRole) employee.role = event.target.value;
+  else if (event.target === els.editPosition) employee.position = event.target.value;
+  else if (event.target === els.editBackup) employee.backup = event.target.value;
+  else if (event.target.matches(".required-input, .actual-input")) {
+    const row = event.target.closest(".skill-edit-row");
+    const skill = employee.skills[Number(row.dataset.skillIndex)];
+    const value = Number(event.target.value);
+    if (Number.isFinite(value)) skill[event.target.matches(".required-input") ? "required" : "actual"] = value;
+  }
+});
+
+document.getElementById("addEmployee").addEventListener("click", () => {
+  const group = selectedEditGroup();
+  const templateSkills = group.employees[0]?.skills || [];
+  group.employees.push({
+    role: "仓管员",
+    name: "新员工",
+    position: "",
+    backup: "",
+    qualities: { 工作态度: "合格", 协作能力: "合格", 执行力: "合格" },
+    skills: templateSkills.map((skill) => ({ name: skill.name, required: 0, actual: 0 })),
+  });
+  populateEmployeeOptions(group.employees.length - 1);
+  setFormMessage(els.editorMessage, "已新增人员，请填写资料后保存", "success");
+});
+
+document.getElementById("deleteEmployee").addEventListener("click", () => {
+  const group = selectedEditGroup();
+  const employee = selectedEditEmployee();
+  if (group.employees.length <= 1) return setFormMessage(els.editorMessage, "每个业务组至少需要保留一名员工", "error");
+  if (!employee || !window.confirm(`确定删除“${employee.name}”吗？保存后才会正式生效。`)) return;
+  group.employees.splice(selectedEmployeeIndex(), 1);
+  populateEmployeeOptions(0);
+  setFormMessage(els.editorMessage, "人员已从当前列表移除，请点击保存使修改生效", "success");
+});
+
+els.employeeEditor.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const submit = els.employeeEditor.querySelector('button[type="submit"]');
+  try {
+    commitFormToEmployee();
+    submit.disabled = true;
+    setFormMessage(els.editorMessage, "正在保存…");
+    await saveRemoteData();
+    refreshDashboard();
+    populateEmployeeOptions(selectedEmployeeIndex());
+    setFormMessage(els.editorMessage, "修改已保存，其他人刷新页面即可看到", "success");
+  } catch (error) {
+    const conflict = /conflict|40001/i.test(error.message || "");
+    setFormMessage(els.editorMessage, conflict ? "数据已被其他管理员修改，请关闭编辑后刷新再试" : error.message, "error");
+    if (/登录|JWT|token/i.test(error.message || "")) logoutEditor();
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+async function initializeApp() {
+  try { await loadRemoteData(); } catch (error) { console.warn("在线数据读取失败，已显示内置数据", error); }
+  refreshDashboard();
+  renderLegend();
+  if (backendConfigured()) {
+    setInterval(async () => {
+      if (!els.editorBackdrop.hidden) return;
+      try {
+        const previousVersion = dataVersion;
+        if (await loadRemoteData() && dataVersion !== previousVersion) refreshDashboard();
+      } catch (error) { console.warn("在线数据自动刷新失败", error); }
+    }, 60000);
+  }
+}
+
+initializeApp();

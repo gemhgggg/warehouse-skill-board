@@ -14,9 +14,12 @@
           <p class="eyebrow">仓储部 · 2026 年 Q1</p>
           <p class="update-note">数据更新：<span id="updatedAt">2026-04-23</span></p>
         </div>
-        <div class="source-tags" aria-label="数据范围">
-          <span>成品仓</span>
-          <span>原辅料仓</span>
+        <div class="header-actions">
+          <div class="source-tags" aria-label="数据范围">
+            <span>成品仓</span>
+            <span>原辅料仓</span>
+          </div>
+          <button class="editor-entry" id="openEditor" type="button">在线编辑</button>
         </div>
       </div>
       <h1 class="tile-title" aria-label="员工技能矩阵看板">
@@ -77,6 +80,54 @@
       </section>
     </div>
 
+    <div class="dialog-backdrop" id="loginBackdrop" hidden>
+      <section class="dialog login-dialog" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+        <header class="dialog-header">
+          <div>
+            <p class="eyebrow">管理员验证</p>
+            <h2 id="loginTitle">在线编辑登录</h2>
+          </div>
+          <button class="close-button" id="closeLogin" type="button" aria-label="关闭">×</button>
+        </header>
+        <form class="login-form" id="loginForm">
+          <label><span>手机号</span><input id="editorPhone" type="tel" inputmode="numeric" autocomplete="username" placeholder="请输入已登记手机号" required /></label>
+          <label><span>密码</span><input id="editorPassword" type="password" autocomplete="current-password" placeholder="请输入密码" required /></label>
+          <p class="form-message" id="loginMessage" role="alert"></p>
+          <div class="form-actions"><button class="secondary-button" id="cancelLogin" type="button">取消</button><button class="primary-button" type="submit">验证并进入</button></div>
+        </form>
+      </section>
+    </div>
+
+    <div class="editor-backdrop" id="editorBackdrop" hidden>
+      <aside class="editor-panel" id="editorPanel" aria-labelledby="editorTitle">
+        <header class="editor-header">
+          <div><p class="eyebrow">已通过权限验证</p><h2 id="editorTitle">在线编辑技能数据</h2></div>
+          <button class="close-button" id="closeEditor" type="button" aria-label="关闭编辑面板">×</button>
+        </header>
+        <div class="editor-toolbar">
+          <label><span>业务组</span><select id="editGroupSelect"></select></label>
+          <label><span>员工</span><select id="editEmployeeSelect"></select></label>
+          <button class="secondary-button" id="addEmployee" type="button">＋ 新增人员</button>
+        </div>
+        <form class="employee-editor" id="employeeEditor">
+          <div class="employee-fields">
+            <label><span>姓名</span><input id="editName" required /></label>
+            <label><span>岗位</span><input id="editRole" required /></label>
+            <label><span>岗位名称</span><input id="editPosition" /></label>
+            <label><span>顶岗人</span><input id="editBackup" /></label>
+          </div>
+          <div class="skill-editor-heading"><div><h3>技能分数</h3><p>分数范围为 0–100；岗位要求填 0 表示不要求。</p></div></div>
+          <div class="skill-editor" id="skillEditor"></div>
+          <p class="form-message" id="editorMessage" role="status"></p>
+          <div class="editor-actions">
+            <button class="danger-button" id="deleteEmployee" type="button">删除当前人员</button>
+            <div><button class="secondary-button" id="logoutEditor" type="button">退出登录</button><button class="primary-button" type="submit">保存全部修改</button></div>
+          </div>
+        </form>
+      </aside>
+    </div>
+
+    <script src="./config.js"></script>
     <script src="./data.js"></script>
     <script src="./app.js"></script>
   </body>
