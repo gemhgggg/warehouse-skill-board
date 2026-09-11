@@ -3870,6 +3870,7 @@ window.SKILL_DATA = {
   ],
   "plans": [
     {
+      "id": "plan-1",
       "role": "劳务工",
       "name": "徐万金",
       "current": "玻璃收发",
@@ -3879,6 +3880,7 @@ window.SKILL_DATA = {
       "end": "2026-07-01"
     },
     {
+      "id": "plan-2",
       "role": "劳务工",
       "name": "陈志鹏",
       "current": "包材收发",
@@ -3888,6 +3890,7 @@ window.SKILL_DATA = {
       "end": "2026-08-01"
     },
     {
+      "id": "plan-3",
       "role": "仓管员",
       "name": "戴逸",
       "current": "入库（白班）",
@@ -3897,6 +3900,7 @@ window.SKILL_DATA = {
       "end": "2026-07-01"
     },
     {
+      "id": "plan-4",
       "role": "仓管员",
       "name": "李建",
       "current": "入库（白班）",
@@ -3906,6 +3910,7 @@ window.SKILL_DATA = {
       "end": "2026-07-01"
     },
     {
+      "id": "plan-5",
       "role": "仓管员",
       "name": "王乃荣",
       "current": "入库（白班）",
@@ -3913,6 +3918,503 @@ window.SKILL_DATA = {
       "content": "学习现场小程序填写，PDA拣货发运",
       "start": "2026-05-01",
       "end": "2026-07-01"
+    }
+  ],
+  "multiSkillBoards": [
+    {
+      "id": "原辅料仓",
+      "area": "原辅料仓",
+      "title": "多能工一览表（原辅料）",
+      "sections": [
+        {
+          "id": "原辅料仓-4-1",
+          "name": "仓储作业人员",
+          "skills": [
+            "电池片收发存",
+            "焊带收发存",
+            "接线盒收发存",
+            "硅胶收发存",
+            "胶膜收发存",
+            "边框收发存",
+            "玻璃收发存",
+            "包材收发存",
+            "机物料收发存"
+          ],
+          "employees": [
+            {
+              "id": "原辅料仓-4-1-王荣礼",
+              "role": "班长",
+              "name": "王荣礼",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "原辅料仓-4-2-郭伟伟",
+              "role": "仓管员",
+              "name": "郭伟伟",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "原辅料仓-4-3-徐永俊",
+              "role": "仓管员",
+              "name": "徐永俊",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "原辅料仓-4-4-潘泉",
+              "role": "仓管员",
+              "name": "潘泉",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "原辅料仓-4-5-王治南",
+              "role": "仓管员",
+              "name": "王治南",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "原辅料仓-4-6-徐利兵",
+              "role": "仓管员",
+              "name": "徐利兵",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "原辅料仓-4-7-董松松",
+              "role": "仓管员",
+              "name": "董松松",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "原辅料仓-4-8-苏奎",
+              "role": "班长",
+              "name": "苏奎",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "原辅料仓-4-9-李明",
+              "role": "仓管员",
+              "name": "李明",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "原辅料仓-4-10-韩其广",
+              "role": "仓管员",
+              "name": "韩其广",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "原辅料仓-4-11-高国益",
+              "role": "班长",
+              "name": "高国益",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            }
+          ]
+        },
+        {
+          "id": "原辅料仓-18-1",
+          "name": "账务人员",
+          "skills": [
+            "电池片账务",
+            "辅料账务",
+            "机物料账务",
+            "废旧账务",
+            "考勤",
+            "报销及请购"
+          ],
+          "employees": [
+            {
+              "id": "原辅料仓-18-1-廖芳",
+              "role": "账务员",
+              "name": "廖芳",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "原辅料仓-18-2-刘园园",
+              "role": "账务员",
+              "name": "刘园园",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "成品仓",
+      "area": "成品仓",
+      "title": "多能工一览表（成品）",
+      "sections": [
+        {
+          "id": "成品仓-3-1",
+          "name": "仓储作业人员",
+          "skills": [
+            "入库",
+            "发货",
+            "退库",
+            "盘点"
+          ],
+          "employees": [
+            {
+              "id": "成品仓-3-1-王永俊",
+              "role": "仓管员",
+              "name": "王永俊",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-2-蒋超",
+              "role": "仓管员",
+              "name": "蒋超",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-3-李建",
+              "role": "仓管员",
+              "name": "李建",
+              "capabilities": [
+                true,
+                false,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-4-陈建",
+              "role": "仓管员",
+              "name": "陈建",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-5-苏兵仁",
+              "role": "仓管员",
+              "name": "苏兵仁",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-6-陈昌海",
+              "role": "仓管员",
+              "name": "陈昌海",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-7-巨喜喜",
+              "role": "班长",
+              "name": "巨喜喜",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-8-戴逸",
+              "role": "仓管员",
+              "name": "戴逸",
+              "capabilities": [
+                true,
+                false,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-9-马鹏",
+              "role": "仓管员",
+              "name": "马鹏",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-10-王乃荣",
+              "role": "仓管员",
+              "name": "王乃荣",
+              "capabilities": [
+                true,
+                false,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-11-顾孟阳",
+              "role": "班长",
+              "name": "顾孟阳",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-12-张景琪",
+              "role": "仓管员",
+              "name": "张景琪",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-13-凡礼",
+              "role": "仓管员",
+              "name": "凡礼",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-14-刘利民",
+              "role": "班长",
+              "name": "刘利民",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-15-李侠",
+              "role": "仓管员",
+              "name": "李侠",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-16-李春",
+              "role": "劳务工",
+              "name": "李春",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-17-刘勇",
+              "role": "劳务工",
+              "name": "刘勇",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true
+              ]
+            }
+          ]
+        },
+        {
+          "id": "成品仓-3-9",
+          "name": "账务人员",
+          "skills": [
+            "sap操作",
+            "wms操作",
+            "排柜作业",
+            "出门证办理",
+            "盘点相关"
+          ],
+          "employees": [
+            {
+              "id": "成品仓-3-1-陈玲",
+              "role": "账务员",
+              "name": "陈玲",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-2-崔鹏飞",
+              "role": "账务员",
+              "name": "崔鹏飞",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            {
+              "id": "成品仓-3-3-孙文芹",
+              "role": "账务员",
+              "name": "孙文芹",
+              "capabilities": [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 };

@@ -101,29 +101,85 @@
     <div class="editor-backdrop" id="editorBackdrop" hidden>
       <aside class="editor-panel" id="editorPanel" aria-labelledby="editorTitle">
         <header class="editor-header">
-          <div><p class="eyebrow">已通过权限验证</p><h2 id="editorTitle">在线编辑技能数据</h2></div>
+          <div><p class="eyebrow">已通过权限验证</p><h2 id="editorTitle">在线编辑看板数据</h2></div>
           <button class="close-button" id="closeEditor" type="button" aria-label="关闭编辑面板">×</button>
         </header>
-        <div class="editor-toolbar">
-          <label><span>业务组</span><select id="editGroupSelect"></select></label>
-          <label><span>员工</span><select id="editEmployeeSelect"></select></label>
-          <button class="secondary-button" id="addEmployee" type="button">＋ 新增人员</button>
-        </div>
-        <form class="employee-editor" id="employeeEditor">
-          <div class="employee-fields">
-            <label><span>姓名</span><input id="editName" required /></label>
-            <label><span>岗位</span><input id="editRole" required /></label>
-            <label><span>岗位名称</span><input id="editPosition" /></label>
-            <label><span>顶岗人</span><input id="editBackup" /></label>
+        <nav class="editor-tabs" aria-label="选择编辑内容">
+          <button class="editor-tab active" type="button" data-editor-tab="matrix">技能矩阵</button>
+          <button class="editor-tab" type="button" data-editor-tab="plans">员工提升计划</button>
+          <button class="editor-tab" type="button" data-editor-tab="multi">多能工一览表</button>
+        </nav>
+
+        <section class="editor-section" id="matrixEditorPanel">
+          <div class="editor-toolbar">
+            <label><span>业务组</span><select id="editGroupSelect"></select></label>
+            <label><span>员工</span><select id="editEmployeeSelect"></select></label>
+            <button class="secondary-button" id="addEmployee" type="button">＋ 新增人员</button>
           </div>
-          <div class="skill-editor-heading"><div><h3>技能分数</h3><p>分数范围为 0–100；岗位要求填 0 表示不要求。</p></div></div>
-          <div class="skill-editor" id="skillEditor"></div>
-          <p class="form-message" id="editorMessage" role="status"></p>
-          <div class="editor-actions">
-            <button class="danger-button" id="deleteEmployee" type="button">删除当前人员</button>
-            <div><button class="secondary-button" id="logoutEditor" type="button">退出登录</button><button class="primary-button" type="submit">保存全部修改</button></div>
+          <form class="employee-editor" id="employeeEditor">
+            <div class="employee-fields">
+              <label><span>姓名</span><input id="editName" required /></label>
+              <label><span>岗位</span><input id="editRole" required /></label>
+              <label><span>岗位名称</span><input id="editPosition" /></label>
+              <label><span>顶岗人</span><input id="editBackup" /></label>
+            </div>
+            <div class="skill-editor-heading"><div><h3>技能分数</h3><p>分数范围为 0–100；岗位要求填 0 表示不要求。</p></div></div>
+            <div class="skill-editor" id="skillEditor"></div>
+            <p class="form-message" id="editorMessage" role="status"></p>
+            <div class="editor-actions">
+              <button class="danger-button" id="deleteEmployee" type="button">删除当前人员</button>
+              <div><button class="secondary-button logout-editor" type="button">退出登录</button><button class="primary-button" type="submit">保存全部修改</button></div>
+            </div>
+          </form>
+        </section>
+
+        <section class="editor-section" id="plansEditorPanel" hidden>
+          <div class="editor-toolbar compact-toolbar">
+            <label><span>培养计划</span><select id="editPlanSelect"></select></label>
+            <button class="secondary-button" id="addPlan" type="button">＋ 新增计划</button>
           </div>
-        </form>
+          <form class="employee-editor" id="planEditor">
+            <div class="employee-fields">
+              <label><span>姓名</span><input id="editPlanName" required /></label>
+              <label><span>岗位</span><input id="editPlanRole" required /></label>
+              <label><span>目前岗位</span><input id="editPlanCurrent" /></label>
+              <label><span>培训岗位</span><input id="editPlanTarget" required /></label>
+              <label class="wide-field"><span>培训内容</span><textarea id="editPlanContent" rows="4"></textarea></label>
+              <label><span>开始日期</span><input id="editPlanStart" type="date" /></label>
+              <label><span>结束日期</span><input id="editPlanEnd" type="date" /></label>
+            </div>
+            <p class="form-message" id="planEditorMessage" role="status"></p>
+            <div class="editor-actions">
+              <button class="danger-button" id="deletePlan" type="button">删除当前计划</button>
+              <div><button class="secondary-button logout-editor" type="button">退出登录</button><button class="primary-button" type="submit">保存全部修改</button></div>
+            </div>
+          </form>
+        </section>
+
+        <section class="editor-section" id="multiEditorPanel" hidden>
+          <div class="editor-toolbar multi-toolbar">
+            <label><span>仓库</span><select id="editMultiBoardSelect"></select></label>
+            <label><span>人员类别</span><select id="editMultiSectionSelect"></select></label>
+            <label><span>员工</span><select id="editMultiEmployeeSelect"></select></label>
+            <button class="secondary-button" id="addMultiEmployee" type="button">＋ 新增人员</button>
+          </div>
+          <form class="employee-editor" id="multiEditor">
+            <div class="employee-fields">
+              <label><span>姓名</span><input id="editMultiName" required /></label>
+              <label><span>岗位</span><input id="editMultiRole" required /></label>
+            </div>
+            <div class="skill-editor-heading">
+              <div><h3>技能状态</h3><p>可修改技能名称、增删技能，并设置员工是否具备。</p></div>
+              <button class="secondary-button" id="addMultiSkill" type="button">＋ 新增技能</button>
+            </div>
+            <div class="skill-editor multi-skill-editor" id="multiSkillEditor"></div>
+            <p class="form-message" id="multiEditorMessage" role="status"></p>
+            <div class="editor-actions">
+              <button class="danger-button" id="deleteMultiEmployee" type="button">删除当前人员</button>
+              <div><button class="secondary-button logout-editor" type="button">退出登录</button><button class="primary-button" type="submit">保存全部修改</button></div>
+            </div>
+          </form>
+        </section>
       </aside>
     </div>
 

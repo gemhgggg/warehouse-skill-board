@@ -1,4 +1,5 @@
-let data = JSON.parse(JSON.stringify(window.SKILL_DATA));
+const bundledData = JSON.parse(JSON.stringify(window.SKILL_DATA));
+let data = normalizeData(JSON.parse(JSON.stringify(window.SKILL_DATA)));
 let dataVersion = 0;
 let authSession = null;
 const backendConfig = window.SKILL_BOARD_CONFIG || {};
@@ -36,7 +37,53 @@ const els = {
   editRole: document.getElementById("editRole"),
   editPosition: document.getElementById("editPosition"),
   editBackup: document.getElementById("editBackup"),
+  matrixEditorPanel: document.getElementById("matrixEditorPanel"),
+  plansEditorPanel: document.getElementById("plansEditorPanel"),
+  multiEditorPanel: document.getElementById("multiEditorPanel"),
+  editPlanSelect: document.getElementById("editPlanSelect"),
+  planEditor: document.getElementById("planEditor"),
+  planEditorMessage: document.getElementById("planEditorMessage"),
+  editPlanName: document.getElementById("editPlanName"),
+  editPlanRole: document.getElementById("editPlanRole"),
+  editPlanCurrent: document.getElementById("editPlanCurrent"),
+  editPlanTarget: document.getElementById("editPlanTarget"),
+  editPlanContent: document.getElementById("editPlanContent"),
+  editPlanStart: document.getElementById("editPlanStart"),
+  editPlanEnd: document.getElementById("editPlanEnd"),
+  editMultiBoardSelect: document.getElementById("editMultiBoardSelect"),
+  editMultiSectionSelect: document.getElementById("editMultiSectionSelect"),
+  editMultiEmployeeSelect: document.getElementById("editMultiEmployeeSelect"),
+  multiEditor: document.getElementById("multiEditor"),
+  multiSkillEditor: document.getElementById("multiSkillEditor"),
+  multiEditorMessage: document.getElementById("multiEditorMessage"),
+  editMultiName: document.getElementById("editMultiName"),
+  editMultiRole: document.getElementById("editMultiRole"),
 };
+
+function normalizeData(input) {
+  const normalized = input && typeof input === "object" ? input : {};
+  normalized.meta ||= JSON.parse(JSON.stringify(bundledData.meta));
+  normalized.groups = Array.isArray(normalized.groups) ? normalized.groups : JSON.parse(JSON.stringify(bundledData.groups || []));
+  normalized.plans = Array.isArray(normalized.plans) ? normalized.plans : [];
+  normalized.plans.forEach((plan, index) => { plan.id ||= `plan-${index + 1}`; });
+  if (!Array.isArray(normalized.multiSkillBoards) || !normalized.multiSkillBoards.length) {
+    normalized.multiSkillBoards = JSON.parse(JSON.stringify(bundledData.multiSkillBoards || []));
+  }
+  normalized.multiSkillBoards.forEach((board, boardIndex) => {
+    board.id ||= `multi-board-${boardIndex + 1}`;
+    board.sections = Array.isArray(board.sections) ? board.sections : [];
+    board.sections.forEach((section, sectionIndex) => {
+      section.id ||= `${board.id}-section-${sectionIndex + 1}`;
+      section.skills = Array.isArray(section.skills) ? section.skills : [];
+      section.employees = Array.isArray(section.employees) ? section.employees : [];
+      section.employees.forEach((employee, employeeIndex) => {
+        employee.id ||= `${section.id}-employee-${employeeIndex + 1}`;
+        employee.capabilities = section.skills.map((_, skillIndex) => Boolean(employee.capabilities?.[skillIndex]));
+      });
+    });
+  });
+  return normalized;
+}
 
 function backendConfigured() {
   return /^https:\/\//.test(backendConfig.backendUrl || "") && Boolean(backendConfig.anonKey);
@@ -67,7 +114,7 @@ async function loadRemoteData() {
   });
   const rows = await parseApiResponse(response);
   if (!Array.isArray(rows) || !rows[0]?.data) return false;
-  data = rows[0].data;
+  data = normalizeData(rows[0].data);
   dataVersion = Number(rows[0].version || 0);
   return true;
 }
@@ -230,10 +277,31 @@ function planCard() {
   </article>`;
 }
 
+function multiSkillCard(board) {
+  const employees = board.sections.flatMap((section) => section.employees);
+  const capabilityCount = board.sections.reduce((sum, section) => sum + section.employees.reduce((employeeSum, employee) => employeeSum + employee.capabilities.filter(Boolean).length, 0), 0);
+  const total = board.sections.reduce((sum, section) => sum + section.employees.length * section.skills.length, 0);
+  const preview = employees.slice(0, 5).map((employee) => `<div class="multi-preview-row"><strong>${escapeHtml(employee.name)}</strong><span>${escapeHtml(employee.role)}</span></div>`).join("");
+  return `<article class="group-card multi-card">
+    <header class="group-banner"><h3>${escapeHtml(board.title)}</h3><span>${employees.length} 人</span></header>
+    <div class="group-body">
+      <div class="group-summary">
+        <div class="rate-block"><strong>${total ? (capabilityCount / total * 100).toFixed(1) : "0.0"}%</strong><span>技能具备率</span></div>
+        <div class="mini-stats"><div class="mini-stat"><strong>${board.sections.length}</strong><span>人员类别</span></div></div>
+      </div>
+      <div class="multi-preview">${preview}</div>
+      <footer class="card-footer"><span class="area-chip">${escapeHtml(board.area)} · 多能工</span><button class="open-button" type="button" data-action="multi" data-board="${escapeHtml(board.id)}">查看完整一览表</button></footer>
+    </div>
+  </article>`;
+}
+
 function render() {
   const groups = filteredGroups();
   renderKpis(groups);
-  els.wall.innerHTML = groups.length ? groups.map(groupCard).join("") + ((state.area === "全部" && state.group === "全部" && !state.query) ? planCard() : "") : `<div class="empty-card">没有找到匹配的员工或业务组，请调整筛选条件。</div>`;
+  const showExtras = state.group === "全部" && !state.query;
+  const boards = (data.multiSkillBoards || []).filter((board) => state.area === "全部" || board.area === state.area);
+  const cards = groups.map(groupCard).join("") + (showExtras ? boards.map(multiSkillCard).join("") + planCard() : "");
+  els.wall.innerHTML = cards || `<div class="empty-card">没有找到匹配的员工或业务组，请调整筛选条件。</div>`;
 }
 
 function openDialog(title, eyebrow, content) {
@@ -295,6 +363,8 @@ function populateEditor() {
     `<option value="${escapeHtml(group.id)}">${escapeHtml(group.area)} · ${escapeHtml(group.name)}</option>`
   ).join("");
   populateEmployeeOptions(0);
+  populatePlanOptions();
+  populateMultiBoardOptions();
 }
 
 function renderEmployeeEditor() {
@@ -341,6 +411,106 @@ function commitFormToEmployee() {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   group.updateDate = today;
   data.meta.updated = today;
+}
+
+function touchData() {
+  const now = new Date();
+  data.meta.updated = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function selectedPlan() {
+  return data.plans.find((plan) => plan.id === els.editPlanSelect.value) || data.plans[0];
+}
+
+function populatePlanOptions(selectedId = "") {
+  els.editPlanSelect.innerHTML = data.plans.map((plan) => `<option value="${escapeHtml(plan.id)}">${escapeHtml(plan.name)} · ${escapeHtml(plan.target)}</option>`).join("");
+  const target = data.plans.some((plan) => plan.id === selectedId) ? selectedId : data.plans[0]?.id || "";
+  els.editPlanSelect.value = target;
+  renderPlanEditor();
+}
+
+function renderPlanEditor() {
+  const plan = selectedPlan();
+  els.planEditor.hidden = !plan;
+  if (!plan) return;
+  els.editPlanName.value = plan.name || "";
+  els.editPlanRole.value = plan.role || "";
+  els.editPlanCurrent.value = plan.current || "";
+  els.editPlanTarget.value = plan.target || "";
+  els.editPlanContent.value = plan.content || "";
+  els.editPlanStart.value = plan.start || "";
+  els.editPlanEnd.value = plan.end || "";
+  setFormMessage(els.planEditorMessage);
+}
+
+function selectedMultiBoard() {
+  return data.multiSkillBoards.find((board) => board.id === els.editMultiBoardSelect.value) || data.multiSkillBoards[0];
+}
+
+function selectedMultiSection() {
+  const board = selectedMultiBoard();
+  return board?.sections.find((section) => section.id === els.editMultiSectionSelect.value) || board?.sections[0];
+}
+
+function selectedMultiEmployee() {
+  const section = selectedMultiSection();
+  return section?.employees.find((employee) => employee.id === els.editMultiEmployeeSelect.value) || section?.employees[0];
+}
+
+function populateMultiBoardOptions(selectedId = "") {
+  els.editMultiBoardSelect.innerHTML = data.multiSkillBoards.map((board) => `<option value="${escapeHtml(board.id)}">${escapeHtml(board.title)}</option>`).join("");
+  els.editMultiBoardSelect.value = data.multiSkillBoards.some((board) => board.id === selectedId) ? selectedId : data.multiSkillBoards[0]?.id || "";
+  populateMultiSectionOptions();
+}
+
+function populateMultiSectionOptions(selectedId = "") {
+  const board = selectedMultiBoard();
+  els.editMultiSectionSelect.innerHTML = (board?.sections || []).map((section) => `<option value="${escapeHtml(section.id)}">${escapeHtml(section.name)}</option>`).join("");
+  els.editMultiSectionSelect.value = board?.sections.some((section) => section.id === selectedId) ? selectedId : board?.sections[0]?.id || "";
+  populateMultiEmployeeOptions();
+}
+
+function populateMultiEmployeeOptions(selectedId = "") {
+  const section = selectedMultiSection();
+  els.editMultiEmployeeSelect.innerHTML = (section?.employees || []).map((employee) => `<option value="${escapeHtml(employee.id)}">${escapeHtml(employee.name)} · ${escapeHtml(employee.role)}</option>`).join("");
+  els.editMultiEmployeeSelect.value = section?.employees.some((employee) => employee.id === selectedId) ? selectedId : section?.employees[0]?.id || "";
+  renderMultiEditor();
+}
+
+function renderMultiEditor() {
+  const section = selectedMultiSection();
+  const employee = selectedMultiEmployee();
+  els.multiEditor.hidden = !section;
+  if (!section) return;
+  els.editMultiName.disabled = !employee;
+  els.editMultiRole.disabled = !employee;
+  els.editMultiName.value = employee?.name || "";
+  els.editMultiRole.value = employee?.role || "";
+  els.multiSkillEditor.innerHTML = section.skills.map((skill, index) => `<div class="multi-skill-edit-row" data-skill-index="${index}">
+    <input class="multi-skill-name" value="${escapeHtml(skill)}" aria-label="技能名称" />
+    <label class="capability-toggle"><input class="multi-skill-state" type="checkbox" ${employee?.capabilities[index] ? "checked" : ""} ${employee ? "" : "disabled"} /><span>已具备</span></label>
+    <button class="danger-button delete-multi-skill" type="button">删除技能</button>
+  </div>`).join("");
+  setFormMessage(els.multiEditorMessage, employee ? "" : "当前类别暂无人员，可点击“新增人员”。");
+}
+
+async function saveAllChanges(messageElement, validate) {
+  const submit = messageElement.closest("form").querySelector('button[type="submit"]');
+  try {
+    if (validate) validate();
+    touchData();
+    submit.disabled = true;
+    setFormMessage(messageElement, "正在保存…");
+    await saveRemoteData();
+    refreshDashboard();
+    setFormMessage(messageElement, "修改已保存，其他人刷新页面即可看到", "success");
+  } catch (error) {
+    const conflict = /conflict|40001/i.test(error.message || "");
+    setFormMessage(messageElement, conflict ? "数据已被其他管理员修改，请关闭编辑后刷新再试" : error.message, "error");
+    if (/登录|JWT|token/i.test(error.message || "")) logoutEditor();
+  } finally {
+    submit.disabled = false;
+  }
 }
 
 function refreshDashboard() {
@@ -435,7 +605,24 @@ function openEmployee(group, employee) {
 
 function openPlans() {
   const rows = data.plans.map((plan) => `<tr><td><strong>${escapeHtml(plan.name)}</strong><br><small>${escapeHtml(plan.role)}</small></td><td>${escapeHtml(plan.current)}</td><td>${escapeHtml(plan.target)}</td><td>${escapeHtml(plan.content)}</td><td>${escapeHtml(plan.start)}<br>至 ${escapeHtml(plan.end)}</td></tr>`).join("");
-  openDialog("员工提升计划", "仓储部 · 计划明细", `<div class="table-scroll"><table class="plan-detail-table"><thead><tr><th>人员</th><th>目前岗位</th><th>培训岗位</th><th>培训内容</th><th>计划周期</th></tr></thead><tbody>${rows}</tbody></table></div>`);
+  const body = rows || `<tr><td colspan="5" class="empty-table-cell">暂无培养计划</td></tr>`;
+  openDialog("员工提升计划", "仓储部 · 计划明细", `<div class="table-scroll"><table class="plan-detail-table"><thead><tr><th>人员</th><th>目前岗位</th><th>培训岗位</th><th>培训内容</th><th>计划周期</th></tr></thead><tbody>${body}</tbody></table></div>`);
+}
+
+function multiStatusDot(hasSkill, skillName) {
+  const label = `${skillName}：${hasSkill ? "已具备该技能" : "不具备该技能"}`;
+  return `<span class="multi-status-dot ${hasSkill ? "has-skill" : "no-skill"}" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}"></span>`;
+}
+
+function openMultiSkillBoard(board) {
+  const sections = board.sections.map((section) => {
+    const rows = section.employees.map((employee, index) => `<tr><td>${index + 1}</td><td>${escapeHtml(employee.role)}</td><td><strong>${escapeHtml(employee.name)}</strong></td>${section.skills.map((skill, skillIndex) => `<td>${multiStatusDot(Boolean(employee.capabilities[skillIndex]), skill)}</td>`).join("")}</tr>`).join("");
+    return `<section class="multi-board-section">
+      <h3>${escapeHtml(section.name)}</h3>
+      <div class="multi-table-scroll"><table class="multi-skill-table"><thead><tr><th>序号</th><th>岗位</th><th>姓名</th>${section.skills.map((skill) => `<th>${escapeHtml(skill)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>
+    </section>`;
+  }).join("");
+  openDialog(board.title, `${board.area} · 原表数据`, `${sections}<div class="multi-legend"><span>${multiStatusDot(true, "已具备该技能")} 已具备该技能</span><span>${multiStatusDot(false, "不具备该技能")} 不具备该技能</span></div>`);
 }
 
 document.querySelectorAll(".segment").forEach((button) => {
@@ -455,6 +642,11 @@ document.addEventListener("click", (event) => {
   if (!target) return;
   const action = target.dataset.action;
   if (action === "plans") return openPlans();
+  if (action === "multi") {
+    const board = data.multiSkillBoards.find((item) => item.id === target.dataset.board);
+    if (board) openMultiSkillBoard(board);
+    return;
+  }
   const group = data.groups.find((item) => item.id === target.dataset.group);
   if (!group) return;
   if (action === "group") openGroup(group);
@@ -476,7 +668,17 @@ document.getElementById("cancelLogin").addEventListener("click", closeLogin);
 els.loginBackdrop.addEventListener("click", (event) => { if (event.target === els.loginBackdrop) closeLogin(); });
 document.getElementById("closeEditor").addEventListener("click", closeEditorPanel);
 els.editorBackdrop.addEventListener("click", (event) => { if (event.target === els.editorBackdrop) closeEditorPanel(); });
-document.getElementById("logoutEditor").addEventListener("click", logoutEditor);
+document.querySelectorAll(".logout-editor").forEach((button) => button.addEventListener("click", logoutEditor));
+
+document.querySelectorAll("[data-editor-tab]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const mode = button.dataset.editorTab;
+    document.querySelectorAll("[data-editor-tab]").forEach((tab) => tab.classList.toggle("active", tab === button));
+    els.matrixEditorPanel.hidden = mode !== "matrix";
+    els.plansEditorPanel.hidden = mode !== "plans";
+    els.multiEditorPanel.hidden = mode !== "multi";
+  });
+});
 
 els.loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -500,6 +702,10 @@ els.loginForm.addEventListener("submit", async (event) => {
 
 els.editGroupSelect.addEventListener("change", () => populateEmployeeOptions(0));
 els.editEmployeeSelect.addEventListener("change", renderEmployeeEditor);
+els.editPlanSelect.addEventListener("change", renderPlanEditor);
+els.editMultiBoardSelect.addEventListener("change", () => populateMultiSectionOptions());
+els.editMultiSectionSelect.addEventListener("change", () => populateMultiEmployeeOptions());
+els.editMultiEmployeeSelect.addEventListener("change", renderMultiEditor);
 
 els.employeeEditor.addEventListener("input", (event) => {
   const employee = selectedEditEmployee();
@@ -541,6 +747,88 @@ document.getElementById("deleteEmployee").addEventListener("click", () => {
   setFormMessage(els.editorMessage, "人员已从当前列表移除，请点击保存使修改生效", "success");
 });
 
+els.planEditor.addEventListener("input", (event) => {
+  const plan = selectedPlan();
+  if (!plan) return;
+  const fields = new Map([
+    [els.editPlanName, "name"], [els.editPlanRole, "role"], [els.editPlanCurrent, "current"],
+    [els.editPlanTarget, "target"], [els.editPlanContent, "content"], [els.editPlanStart, "start"], [els.editPlanEnd, "end"],
+  ]);
+  const key = fields.get(event.target);
+  if (key) plan[key] = event.target.value;
+});
+
+document.getElementById("addPlan").addEventListener("click", () => {
+  const plan = { id: `plan-${Date.now()}`, role: "仓管员", name: "新员工", current: "", target: "待填写", content: "", start: "", end: "" };
+  data.plans.push(plan);
+  populatePlanOptions(plan.id);
+  setFormMessage(els.planEditorMessage, "已新增计划，请填写后保存", "success");
+});
+
+document.getElementById("deletePlan").addEventListener("click", () => {
+  const plan = selectedPlan();
+  if (!plan || !window.confirm(`确定删除“${plan.name}”的提升计划吗？保存后才会正式生效。`)) return;
+  data.plans = data.plans.filter((item) => item.id !== plan.id);
+  populatePlanOptions();
+  if (data.plans.length) setFormMessage(els.planEditorMessage, "计划已移除，请点击保存使修改生效", "success");
+});
+
+els.multiEditor.addEventListener("input", (event) => {
+  const section = selectedMultiSection();
+  const employee = selectedMultiEmployee();
+  if (!section) return;
+  if (event.target === els.editMultiName && employee) employee.name = event.target.value;
+  else if (event.target === els.editMultiRole && employee) employee.role = event.target.value;
+  else {
+    const row = event.target.closest(".multi-skill-edit-row");
+    if (!row) return;
+    const index = Number(row.dataset.skillIndex);
+    if (event.target.matches(".multi-skill-name")) section.skills[index] = event.target.value;
+    if (event.target.matches(".multi-skill-state") && employee) employee.capabilities[index] = event.target.checked;
+  }
+});
+
+document.getElementById("addMultiEmployee").addEventListener("click", () => {
+  const section = selectedMultiSection();
+  if (!section) return;
+  const employee = { id: `${section.id}-employee-${Date.now()}`, role: "仓管员", name: "新员工", capabilities: section.skills.map(() => false) };
+  section.employees.push(employee);
+  populateMultiEmployeeOptions(employee.id);
+  setFormMessage(els.multiEditorMessage, "已新增人员，请填写技能状态后保存", "success");
+});
+
+document.getElementById("deleteMultiEmployee").addEventListener("click", () => {
+  const section = selectedMultiSection();
+  const employee = selectedMultiEmployee();
+  if (!section || !employee || !window.confirm(`确定从多能工一览表删除“${employee.name}”吗？保存后才会正式生效。`)) return;
+  section.employees = section.employees.filter((item) => item.id !== employee.id);
+  populateMultiEmployeeOptions();
+  setFormMessage(els.multiEditorMessage, "人员已移除，请点击保存使修改生效", "success");
+});
+
+document.getElementById("addMultiSkill").addEventListener("click", () => {
+  const section = selectedMultiSection();
+  if (!section) return;
+  section.skills.push("新技能");
+  section.employees.forEach((employee) => employee.capabilities.push(false));
+  renderMultiEditor();
+  setFormMessage(els.multiEditorMessage, "已新增技能，请修改名称和人员状态后保存", "success");
+});
+
+els.multiSkillEditor.addEventListener("click", (event) => {
+  const button = event.target.closest(".delete-multi-skill");
+  if (!button) return;
+  const section = selectedMultiSection();
+  const row = button.closest(".multi-skill-edit-row");
+  const index = Number(row.dataset.skillIndex);
+  const skill = section.skills[index];
+  if (!window.confirm(`确定删除技能“${skill}”吗？该列所有员工状态也会删除。`)) return;
+  section.skills.splice(index, 1);
+  section.employees.forEach((employee) => employee.capabilities.splice(index, 1));
+  renderMultiEditor();
+  setFormMessage(els.multiEditorMessage, "技能列已移除，请点击保存使修改生效", "success");
+});
+
 els.employeeEditor.addEventListener("submit", async (event) => {
   event.preventDefault();
   const submit = els.employeeEditor.querySelector('button[type="submit"]');
@@ -559,6 +847,30 @@ els.employeeEditor.addEventListener("submit", async (event) => {
   } finally {
     submit.disabled = false;
   }
+});
+
+els.planEditor.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await saveAllChanges(els.planEditorMessage, () => {
+    const plan = selectedPlan();
+    if (!plan) throw new Error("请先新增一条计划");
+    if (!plan.name.trim() || !plan.role.trim() || !plan.target.trim()) throw new Error("姓名、岗位和培训岗位不能为空");
+    if (plan.start && plan.end && plan.start > plan.end) throw new Error("结束日期不能早于开始日期");
+  });
+  populatePlanOptions(selectedPlan()?.id || "");
+});
+
+els.multiEditor.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const employeeId = selectedMultiEmployee()?.id || "";
+  await saveAllChanges(els.multiEditorMessage, () => {
+    const section = selectedMultiSection();
+    const employee = selectedMultiEmployee();
+    if (!employee) throw new Error("请先新增一名人员");
+    if (!employee.name.trim() || !employee.role.trim()) throw new Error("姓名和岗位不能为空");
+    if (section.skills.some((skill) => !skill.trim())) throw new Error("技能名称不能为空");
+  });
+  populateMultiEmployeeOptions(employeeId);
 });
 
 async function initializeApp() {
