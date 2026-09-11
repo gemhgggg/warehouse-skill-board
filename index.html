@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="仓储部成品仓与原辅料仓员工技能矩阵、技能缺口和培养计划看板" />
+    <title>仓储部员工技能看板</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="board-header">
+      <div class="topline">
+        <div>
+          <p class="eyebrow">仓储部 · 2026 年 Q1</p>
+          <p class="update-note">数据更新：<span id="updatedAt">2026-04-23</span></p>
+        </div>
+        <div class="source-tags" aria-label="数据范围">
+          <span>成品仓</span>
+          <span>原辅料仓</span>
+        </div>
+      </div>
+      <h1 class="tile-title" aria-label="员工技能矩阵看板">
+        <span>员</span><span>工</span><span>技</span><span>能</span><span>矩</span><span>阵</span><span>看</span><span>板</span>
+      </h1>
+    </header>
+
+    <main>
+      <section class="control-panel" aria-label="筛选条件">
+        <div class="segmented" role="group" aria-label="仓库筛选">
+          <button class="segment active" data-area="全部" type="button">全部</button>
+          <button class="segment" data-area="成品仓" type="button">成品仓</button>
+          <button class="segment" data-area="原辅料仓" type="button">原辅料仓</button>
+        </div>
+        <label class="select-wrap">
+          <span>业务组</span>
+          <select id="groupFilter" aria-label="选择业务组">
+            <option value="全部">全部业务组</option>
+          </select>
+        </label>
+        <label class="search-wrap">
+          <span class="search-label">搜索</span>
+          <input id="searchInput" type="search" placeholder="员工、岗位或技能" autocomplete="off" />
+        </label>
+      </section>
+
+      <section class="kpi-grid" aria-label="技能概览">
+        <article class="kpi-card"><p>业务组</p><strong id="kpiGroups">9</strong><span>当前范围</span></article>
+        <article class="kpi-card"><p>员工人数</p><strong id="kpiEmployees">42</strong><span>矩阵内员工</span></article>
+        <article class="kpi-card emphasis"><p>岗位技能达标率</p><strong id="kpiAttainment">95.7%</strong><span>实际分 ≥ 岗位要求</span></article>
+        <article class="kpi-card alert"><p>待提升技能项</p><strong id="kpiGaps">24</strong><span>未达到岗位要求</span></article>
+      </section>
+
+      <section class="legend-row" aria-label="技能等级说明">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">分组矩阵墙</p>
+            <h2>员工技能一览</h2>
+          </div>
+          <p id="resultNote">点击员工行查看明细，点击卡片右下角展开完整矩阵。</p>
+        </div>
+        <div class="legend" id="legend"></div>
+      </section>
+
+      <section class="matrix-wall" id="matrixWall" aria-live="polite"></section>
+    </main>
+
+    <div class="dialog-backdrop" id="dialogBackdrop" hidden>
+      <section class="dialog" id="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+        <header class="dialog-header">
+          <div>
+            <p class="eyebrow" id="dialogEyebrow">技能矩阵</p>
+            <h2 id="dialogTitle">明细</h2>
+          </div>
+          <button class="close-button" id="closeDialog" type="button" aria-label="关闭">×</button>
+        </header>
+        <div class="dialog-body" id="dialogBody"></div>
+      </section>
+    </div>
+
+    <script src="./data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
