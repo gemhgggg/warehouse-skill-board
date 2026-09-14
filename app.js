@@ -1,8 +1,12 @@
 const bundledData = JSON.parse(JSON.stringify(window.SKILL_DATA));
+const backendConfig = window.SKILL_BOARD_CONFIG || {};
+const siteId = resolveSiteId();
+const siteProfile = backendConfig.sites?.[siteId] || { name: siteId };
 let data = normalizeData(JSON.parse(JSON.stringify(window.SKILL_DATA)));
+let dataEnvelope = null;
+let siteBaseline = JSON.parse(JSON.stringify(data));
 let dataVersion = 0;
 let authSession = null;
-const backendConfig = window.SKILL_BOARD_CONFIG || {};
 const state = { area: "全部", group: "全部", query: "" };
 
 const els = {
@@ -11,6 +15,7 @@ const els = {
   search: document.getElementById("searchInput"),
   legend: document.getElementById("legend"),
   updatedAt: document.getElementById("updatedAt"),
+  siteName: document.getElementById("siteName"),
   kpiGroups: document.getElementById("kpiGroups"),
   kpiEmployees: document.getElementById("kpiEmployees"),
   kpiAttainment: document.getElementById("kpiAttainment"),
@@ -73,6 +78,24 @@ const els = {
   editMultiRole: document.getElementById("editMultiRole"),
 };
 
+function resolveSiteId() {
+  const pathMatch = window.location.pathname.match(/\/(funing|hefei)(?:\/|$)/i);
+  const querySite = new URLSearchParams(window.location.search).get("site");
+  const candidate = String(pathMatch?.[1] || querySite || backendConfig.defaultSiteId || "funing").toLowerCase();
+  return backendConfig.sites?.[candidate] ? candidate : (backendConfig.defaultSiteId || "funing");
+}
+
+function applySiteIdentity() {
+  const siteName = siteProfile.name || siteId;
+  els.siteName.textContent = siteName;
+  document.body.classList.add(`site-${siteId}`);
+  document.title = `${siteName}仓储部员工技能看板`;
+  const description = document.querySelector('meta[name="description"]');
+  if (description) description.content = `${siteName}仓储部成品仓与原辅料仓员工技能矩阵、技能缺口和培养计划看板`;
+  document.getElementById("loginTitle").textContent = `${siteName} · 在线编辑登录`;
+  document.getElementById("editorTitle").textContent = `${siteName} · 在线编辑看板数据`;
+}
+
 function normalizeData(input) {
   const normalized = input && typeof input === "object" ? input : {};
   normalized.meta ||= JSON.parse(JSON.stringify(bundledData.meta));
@@ -127,7 +150,10 @@ async function loadRemoteData() {
   });
   const rows = await parseApiResponse(response);
   if (!Array.isArray(rows) || !rows[0]?.data) return false;
-  data = normalizeData(rows[0].data);
+  dataEnvelope = JSON.parse(JSON.stringify(rows[0].data));
+  const remoteSiteData = dataEnvelope.sites?.[siteId] || dataEnvelope;
+  data = normalizeData(JSON.parse(JSON.stringify(remoteSiteData)));
+  siteBaseline = JSON.parse(JSON.stringify(data));
   dataVersion = Number(rows[0].version || 0);
   return true;
 }
@@ -144,6 +170,7 @@ async function authenticateEditor(phone, password) {
 
 async function saveRemoteData() {
   if (!authSession?.access_token) throw new Error("登录已失效，请重新验证");
+  const payload = buildSavePayload();
   const response = await fetch(apiUrl("/rest/v1/rpc/save_dashboard"), {
     method: "POST",
     headers: {
@@ -151,12 +178,31 @@ async function saveRemoteData() {
       Authorization: `Bearer ${authSession.access_token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ p_data: data, p_expected_version: dataVersion }),
+    body: JSON.stringify({ p_data: payload, p_expected_version: dataVersion }),
   });
   const result = await parseApiResponse(response);
   const saved = Array.isArray(result) ? result[0] : result;
   dataVersion = Number(saved?.version || dataVersion + 1);
+  dataEnvelope = payload;
+  siteBaseline = JSON.parse(JSON.stringify(data));
   return saved;
+}
+
+function buildSavePayload() {
+  const envelope = dataEnvelope && typeof dataEnvelope === "object" ? JSON.parse(JSON.stringify(dataEnvelope)) : {};
+  const seed = JSON.parse(JSON.stringify(siteBaseline || data));
+  envelope.sites ||= {};
+  Object.keys(backendConfig.sites || { funing: {}, hefei: {} }).forEach((id) => {
+    envelope.sites[id] ||= JSON.parse(JSON.stringify(seed));
+  });
+  envelope.sites[siteId] = JSON.parse(JSON.stringify(data));
+  const legacy = siteId === "funing" ? data : (envelope.sites.funing || seed);
+  envelope.meta = JSON.parse(JSON.stringify(legacy.meta));
+  envelope.groups = JSON.parse(JSON.stringify(legacy.groups));
+  envelope.plans = JSON.parse(JSON.stringify(legacy.plans || []));
+  envelope.multiSkillBoards = JSON.parse(JSON.stringify(legacy.multiSkillBoards || []));
+  envelope.siteSchemaVersion = 2;
+  return envelope;
 }
 
 function escapeHtml(value = "") {
@@ -1000,6 +1046,7 @@ els.multiEditor.addEventListener("submit", async (event) => {
 });
 
 async function initializeApp() {
+  applySiteIdentity();
   try { await loadRemoteData(); } catch (error) { console.warn("在线数据读取失败，已显示内置数据", error); }
   refreshDashboard();
   renderLegend();

@@ -60,6 +60,21 @@ button { cursor: pointer; }
   text-transform: uppercase;
 }
 
+.board-header .eyebrow { display: flex; align-items: center; gap: 10px; }
+.site-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 4px 11px;
+  color: #082f5e;
+  background: var(--yellow);
+  border: 1px solid #ffe28f;
+  border-radius: 4px;
+  font-size: .9rem;
+  letter-spacing: .08em;
+}
+body.site-hefei .site-label { color: white; background: #168668; border-color: #45b795; }
+
 .update-note { margin: 0; color: #b8cce2; font-size: 0.85rem; }
 
 .source-tags { display: flex; gap: 8px; }

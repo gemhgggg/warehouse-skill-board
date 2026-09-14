@@ -4,4 +4,9 @@ window.SKILL_BOARD_CONFIG = {
   anonKey: "sb_publishable_PGHqPLLzDtDF5aQszJHjhw_nNg-CD8C",
   // 登录框仍显示手机号，程序会把手机号映射为此域名下的内部账号。
   authEmailDomain: "skillboard.local",
+  defaultSiteId: "funing",
+  sites: {
+    funing: { name: "阜宁基地" },
+    hefei: { name: "合肥基地" },
+  },
 };
