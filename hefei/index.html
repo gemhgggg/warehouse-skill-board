@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>合肥基地仓储部员工技能看板</title>
+  </head>
+  <body>
+    <p>正在加载合肥基地员工技能看板…</p>
+    <script>
+      fetch("../index.html", { cache: "no-store" })
+        .then((response) => {
+          if (!response.ok) throw new Error("页面加载失败");
+          return response.text();
+        })
+        .then((html) => {
+          const page = html.replaceAll('href="./', 'href="../').replaceAll('src="./', 'src="../');
+          document.open();
+          document.write(page);
+          document.close();
+        })
+        .catch(() => { document.body.innerHTML = "<p>看板暂时无法加载，请刷新页面重试。</p>"; });
+    </script>
+  </body>
+</html>
