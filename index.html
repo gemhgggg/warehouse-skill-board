@@ -106,6 +106,7 @@
         </header>
         <nav class="editor-tabs" aria-label="选择编辑内容">
           <button class="editor-tab active" type="button" data-editor-tab="matrix">技能矩阵</button>
+          <button class="editor-tab" type="button" data-editor-tab="groups">业务组管理</button>
           <button class="editor-tab" type="button" data-editor-tab="plans">员工提升计划</button>
           <button class="editor-tab" type="button" data-editor-tab="multi">多能工一览表</button>
         </nav>
@@ -128,6 +129,32 @@
             <p class="form-message" id="editorMessage" role="status"></p>
             <div class="editor-actions">
               <button class="danger-button" id="deleteEmployee" type="button">删除当前人员</button>
+              <div><button class="secondary-button logout-editor" type="button">退出登录</button><button class="primary-button" type="submit">保存全部修改</button></div>
+            </div>
+          </form>
+        </section>
+
+        <section class="editor-section" id="groupsEditorPanel" hidden>
+          <div class="editor-toolbar group-admin-toolbar">
+            <label><span>查询业务组</span><input id="editGroupQuery" type="search" placeholder="输入仓库或业务组名称" autocomplete="off" /></label>
+            <label><span>业务组</span><select id="editGroupAdminSelect"></select></label>
+            <button class="secondary-button" id="addGroup" type="button">＋ 新增业务组</button>
+          </div>
+          <form class="employee-editor" id="groupEditor">
+            <div class="employee-fields">
+              <label><span>所属仓库</span><select id="editGroupArea" required><option value="成品仓">成品仓</option><option value="原辅料仓">原辅料仓</option></select></label>
+              <label><span>业务组名称</span><input id="editGroupName" required /></label>
+              <label><span>一级部门</span><input id="editGroupDepartment" /></label>
+              <label><span>来源工作表</span><input id="editGroupSourceSheet" /></label>
+              <label><span>文件编号</span><input id="editGroupDocumentNo" /></label>
+              <label><span>更新人</span><input id="editGroupUpdatedBy" /></label>
+              <label><span>员工人数</span><input id="editGroupEmployeeCount" readonly /></label>
+              <label><span>技能项目数</span><input id="editGroupSkillCount" readonly /></label>
+            </div>
+            <p class="group-editor-hint">新增业务组时，会复制当前所选业务组的技能项目，并自动创建一名待填写的新员工；员工资料和分数可在“技能矩阵”中继续编辑。</p>
+            <p class="form-message" id="groupEditorMessage" role="status"></p>
+            <div class="editor-actions">
+              <button class="danger-button" id="deleteGroup" type="button">删除当前业务组</button>
               <div><button class="secondary-button logout-editor" type="button">退出登录</button><button class="primary-button" type="submit">保存全部修改</button></div>
             </div>
           </form>

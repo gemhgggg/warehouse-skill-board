@@ -38,8 +38,21 @@ const els = {
   editPosition: document.getElementById("editPosition"),
   editBackup: document.getElementById("editBackup"),
   matrixEditorPanel: document.getElementById("matrixEditorPanel"),
+  groupsEditorPanel: document.getElementById("groupsEditorPanel"),
   plansEditorPanel: document.getElementById("plansEditorPanel"),
   multiEditorPanel: document.getElementById("multiEditorPanel"),
+  editGroupQuery: document.getElementById("editGroupQuery"),
+  editGroupAdminSelect: document.getElementById("editGroupAdminSelect"),
+  groupEditor: document.getElementById("groupEditor"),
+  groupEditorMessage: document.getElementById("groupEditorMessage"),
+  editGroupArea: document.getElementById("editGroupArea"),
+  editGroupName: document.getElementById("editGroupName"),
+  editGroupDepartment: document.getElementById("editGroupDepartment"),
+  editGroupSourceSheet: document.getElementById("editGroupSourceSheet"),
+  editGroupDocumentNo: document.getElementById("editGroupDocumentNo"),
+  editGroupUpdatedBy: document.getElementById("editGroupUpdatedBy"),
+  editGroupEmployeeCount: document.getElementById("editGroupEmployeeCount"),
+  editGroupSkillCount: document.getElementById("editGroupSkillCount"),
   editPlanSelect: document.getElementById("editPlanSelect"),
   planEditor: document.getElementById("planEditor"),
   planEditorMessage: document.getElementById("planEditorMessage"),
@@ -359,12 +372,19 @@ function populateEmployeeOptions(index = 0) {
 }
 
 function populateEditor() {
+  populateMatrixGroupOptions();
+  els.editGroupQuery.value = "";
+  populateGroupAdminOptions();
+  populatePlanOptions();
+  populateMultiBoardOptions();
+}
+
+function populateMatrixGroupOptions(selectedId = "") {
   els.editGroupSelect.innerHTML = data.groups.map((group) =>
     `<option value="${escapeHtml(group.id)}">${escapeHtml(group.area)} · ${escapeHtml(group.name)}</option>`
   ).join("");
+  els.editGroupSelect.value = data.groups.some((group) => group.id === selectedId) ? selectedId : data.groups[0]?.id || "";
   populateEmployeeOptions(0);
-  populatePlanOptions();
-  populateMultiBoardOptions();
 }
 
 function renderEmployeeEditor() {
@@ -416,6 +436,54 @@ function commitFormToEmployee() {
 function touchData() {
   const now = new Date();
   data.meta.updated = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function selectedAdminGroup() {
+  return data.groups.find((group) => group.id === els.editGroupAdminSelect.value) || null;
+}
+
+function populateGroupAdminOptions(selectedId = "") {
+  const query = els.editGroupQuery.value.trim().toLowerCase();
+  const groups = data.groups.filter((group) => !query || [group.area, group.name, group.department, group.documentNo]
+    .some((value) => String(value || "").toLowerCase().includes(query)));
+  els.editGroupAdminSelect.innerHTML = groups.map((group) =>
+    `<option value="${escapeHtml(group.id)}">${escapeHtml(group.area)} · ${escapeHtml(group.name)}</option>`
+  ).join("");
+  els.editGroupAdminSelect.value = groups.some((group) => group.id === selectedId) ? selectedId : groups[0]?.id || "";
+  renderGroupEditor();
+}
+
+function renderGroupEditor() {
+  const group = selectedAdminGroup();
+  els.groupEditor.hidden = !group;
+  if (!group) return;
+  els.editGroupArea.value = group.area || "成品仓";
+  els.editGroupName.value = group.name || "";
+  els.editGroupDepartment.value = group.department || "仓储部";
+  els.editGroupSourceSheet.value = group.sourceSheet || "";
+  els.editGroupDocumentNo.value = group.documentNo || "";
+  els.editGroupUpdatedBy.value = group.updatedBy || "";
+  els.editGroupEmployeeCount.value = String(group.employees?.length || 0);
+  els.editGroupSkillCount.value = String(group.employees?.[0]?.skills?.length || 0);
+  setFormMessage(els.groupEditorMessage);
+}
+
+function commitGroupForm() {
+  const group = selectedAdminGroup();
+  if (!group) throw new Error("请选择业务组");
+  const area = els.editGroupArea.value;
+  const name = els.editGroupName.value.trim();
+  if (!name) throw new Error("业务组名称不能为空");
+  const duplicate = data.groups.some((item) => item.id !== group.id && item.area === area && item.name.trim() === name);
+  if (duplicate) throw new Error(`“${area} · ${name}”已经存在`);
+  group.area = area;
+  group.name = name;
+  group.department = els.editGroupDepartment.value.trim() || "仓储部";
+  group.sourceSheet = els.editGroupSourceSheet.value.trim();
+  group.documentNo = els.editGroupDocumentNo.value.trim();
+  group.updatedBy = els.editGroupUpdatedBy.value.trim();
+  touchData();
+  group.updateDate = data.meta.updated;
 }
 
 function selectedPlan() {
@@ -504,10 +572,12 @@ async function saveAllChanges(messageElement, validate) {
     await saveRemoteData();
     refreshDashboard();
     setFormMessage(messageElement, "修改已保存，其他人刷新页面即可看到", "success");
+    return true;
   } catch (error) {
     const conflict = /conflict|40001/i.test(error.message || "");
     setFormMessage(messageElement, conflict ? "数据已被其他管理员修改，请关闭编辑后刷新再试" : error.message, "error");
     if (/登录|JWT|token/i.test(error.message || "")) logoutEditor();
+    return false;
   } finally {
     submit.disabled = false;
   }
@@ -675,6 +745,7 @@ document.querySelectorAll("[data-editor-tab]").forEach((button) => {
     const mode = button.dataset.editorTab;
     document.querySelectorAll("[data-editor-tab]").forEach((tab) => tab.classList.toggle("active", tab === button));
     els.matrixEditorPanel.hidden = mode !== "matrix";
+    els.groupsEditorPanel.hidden = mode !== "groups";
     els.plansEditorPanel.hidden = mode !== "plans";
     els.multiEditorPanel.hidden = mode !== "multi";
   });
@@ -702,6 +773,8 @@ els.loginForm.addEventListener("submit", async (event) => {
 
 els.editGroupSelect.addEventListener("change", () => populateEmployeeOptions(0));
 els.editEmployeeSelect.addEventListener("change", renderEmployeeEditor);
+els.editGroupQuery.addEventListener("input", () => populateGroupAdminOptions(els.editGroupAdminSelect.value));
+els.editGroupAdminSelect.addEventListener("change", renderGroupEditor);
 els.editPlanSelect.addEventListener("change", renderPlanEditor);
 els.editMultiBoardSelect.addEventListener("change", () => populateMultiSectionOptions());
 els.editMultiSectionSelect.addEventListener("change", () => populateMultiEmployeeOptions());
@@ -745,6 +818,48 @@ document.getElementById("deleteEmployee").addEventListener("click", () => {
   group.employees.splice(selectedEmployeeIndex(), 1);
   populateEmployeeOptions(0);
   setFormMessage(els.editorMessage, "人员已从当前列表移除，请点击保存使修改生效", "success");
+});
+
+document.getElementById("addGroup").addEventListener("click", () => {
+  const source = selectedAdminGroup() || data.groups[0];
+  const sourceSkills = source?.employees?.[0]?.skills || [];
+  const id = `group-${Date.now()}`;
+  const group = {
+    id,
+    area: source?.area || "成品仓",
+    name: "新业务组",
+    sourceSheet: "新业务组",
+    documentNo: "",
+    department: source?.department || "仓储部",
+    updatedBy: "",
+    updateDate: data.meta.updated,
+    employees: [{
+      role: "仓管员",
+      name: "新员工",
+      position: "",
+      backup: "",
+      qualities: { 工作态度: "合格", 协作能力: "合格", 执行力: "合格" },
+      skills: sourceSkills.map((skill) => ({ name: skill.name, required: 0, actual: 0 })),
+    }],
+  };
+  data.groups.push(group);
+  els.editGroupQuery.value = "";
+  populateGroupAdminOptions(id);
+  populateMatrixGroupOptions(id);
+  setFormMessage(els.groupEditorMessage, "已新增业务组，请填写资料后保存", "success");
+});
+
+document.getElementById("deleteGroup").addEventListener("click", () => {
+  const group = selectedAdminGroup();
+  if (!group) return;
+  if (data.groups.length <= 1) return setFormMessage(els.groupEditorMessage, "至少需要保留一个业务组", "error");
+  const employeeCount = group.employees?.length || 0;
+  if (!window.confirm(`确定删除“${group.area} · ${group.name}”吗？该组 ${employeeCount} 名员工也会一并删除，保存后才会正式生效。`)) return;
+  data.groups = data.groups.filter((item) => item.id !== group.id);
+  els.editGroupQuery.value = "";
+  populateGroupAdminOptions();
+  populateMatrixGroupOptions();
+  setFormMessage(els.groupEditorMessage, "业务组已移除，请点击保存使修改生效", "success");
 });
 
 els.planEditor.addEventListener("input", (event) => {
@@ -846,6 +961,17 @@ els.employeeEditor.addEventListener("submit", async (event) => {
     if (/登录|JWT|token/i.test(error.message || "")) logoutEditor();
   } finally {
     submit.disabled = false;
+  }
+});
+
+els.groupEditor.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const groupId = selectedAdminGroup()?.id || "";
+  const saved = await saveAllChanges(els.groupEditorMessage, commitGroupForm);
+  if (saved) {
+    populateGroupAdminOptions(groupId);
+    populateMatrixGroupOptions(groupId);
+    setFormMessage(els.groupEditorMessage, "修改已保存，其他人刷新页面即可看到", "success");
   }
 });
 

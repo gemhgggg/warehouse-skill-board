@@ -456,7 +456,7 @@ button:disabled { cursor: wait; opacity: .58; }
   border-bottom: 4px solid var(--yellow);
 }
 .editor-header h2 { margin: 0; font-size: 1.3rem; }
-.editor-tabs { position: sticky; top: 81px; z-index: 3; display: grid; grid-template-columns: repeat(3, 1fr); padding: 0 20px; background: white; border-bottom: 1px solid var(--line); }
+.editor-tabs { position: sticky; top: 81px; z-index: 3; display: grid; grid-template-columns: repeat(4, 1fr); padding: 0 20px; background: white; border-bottom: 1px solid var(--line); }
 .editor-tab { min-height: 48px; padding: 8px; color: #5c6e80; background: white; border: 0; border-bottom: 4px solid transparent; font-size: .8rem; font-weight: 850; }
 .editor-tab:hover { color: var(--navy); background: #f1f5f8; }
 .editor-tab.active { color: var(--navy); border-bottom-color: var(--yellow); }
@@ -471,11 +471,14 @@ button:disabled { cursor: wait; opacity: .58; }
   border-bottom: 1px solid var(--line);
 }
 .compact-toolbar { grid-template-columns: minmax(260px, 1fr) auto; }
+.group-admin-toolbar { grid-template-columns: minmax(180px, 1fr) minmax(190px, 1fr) auto; }
 .multi-toolbar { grid-template-columns: 1fr 1fr 1fr auto; }
 .employee-editor { padding: 20px; }
 .employee-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; padding: 17px; background: white; border: 1px solid var(--line); border-radius: 7px; }
 .employee-fields .wide-field { grid-column: 1 / -1; }
 .employee-fields textarea { min-height: 96px; padding: 10px; resize: vertical; border: 1px solid #9eb0c0; border-radius: 4px; font: inherit; }
+.employee-fields input[readonly] { color: #53677a; background: #eef3f7; }
+.group-editor-hint { margin: 13px 0 0; color: #53677a; font-size: .78rem; line-height: 1.65; }
 .skill-editor-heading { display: flex; justify-content: space-between; align-items: end; margin: 22px 0 10px; }
 .skill-editor-heading h3 { margin: 0; color: var(--navy); font-size: 1.08rem; }
 .skill-editor-heading p { margin: 4px 0 0; color: var(--muted); font-size: .76rem; }
@@ -542,7 +545,7 @@ button:disabled { cursor: wait; opacity: .58; }
   .editor-toolbar .secondary-button { grid-column: 1 / -1; }
   .editor-tabs { top: 81px; padding: 0 8px; }
   .editor-tab { min-height: 56px; font-size: .72rem; }
-  .multi-toolbar, .compact-toolbar { grid-template-columns: 1fr 1fr; }
+  .multi-toolbar, .compact-toolbar, .group-admin-toolbar { grid-template-columns: 1fr 1fr; }
   .multi-toolbar label:nth-child(3) { grid-column: 1 / -1; }
   .employee-editor { padding: 14px; }
   .employee-fields { grid-template-columns: 1fr; }
